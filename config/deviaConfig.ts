@@ -1,5 +1,5 @@
 // DevIA Configuration File
-// Este arquivo injeta a API Key do Gemini na window para uso pelo chat widget
+
 
 declare global {
   interface Window {
@@ -15,10 +15,6 @@ window.DEVIA_CONFIG = {
 };
 
 // Log de inicialização
-if (window.DEVIA_CONFIG.GEMINI_API_KEY) {
-  console.log('🔑 DevIA: Gemini API Key configurada');
-} else {
-  console.warn('⚠️ DevIA: Gemini API Key não encontrada. Usando modo fallback local.');
-}
+
 
 export {};
