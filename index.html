@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alberto Gabriel | Dev - Full-Stack & Automation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      .bg-grid-pattern {
+        background-image: radial-gradient(circle at 1px 1px, #ffffff10 1px, transparent 0);
+        background-size: 40px 40px;
+      }
+      /* Chat specific animations */
+      @keyframes pulse-green {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      .status-dot {
+        animation: pulse-green 2s infinite;
+      }
+      #chat-messages::-webkit-scrollbar {
+        width: 4px;
+      }
+      #chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #chat-messages::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.575.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+<script type="module" src="/config/deviaConfig.ts"></script>
+</head>
+  <body class="bg-[#0a0a0a] text-gray-200 antialiased selection:bg-[#39FF14] selection:text-black">
+    <div id="root"></div>
+
+    <!-- Chat Widget -->
+    <div id="devia-widget" class="fixed bottom-4 right-4 z-[9999] flex flex-col items-end">
+      <!-- Chat Window -->
+      <div id="chat-window" class="hidden w-80 sm:w-96 h-[500px] bg-gray-900 rounded-xl shadow-2xl flex flex-col overflow-hidden mb-4 border border-white/10 animate-in slide-in-from-bottom-5 duration-300">
+        <!-- Header -->
+        <div class="p-4 bg-gray-950 border-b border-white/5 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="relative">
+              <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center">
+                <img src="/IMG/Gemini_Generated_Image_97yv1697yv1697yv-removebg-preview.png" alt="Agente DevIA" class="w-12 h-12 object-contain" />
+              </div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-gray-950 rounded-full status-dot"></span>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-sm">DevIA</h3>
+              <p class="text-[10px] text-green-500 font-bold uppercase tracking-widest">Online</p>
+            </div>
+          </div>
+          <button id="close-chat" class="text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-800/50">
+          <!-- Messages will be rendered here -->
+        </div>
+
+        <!-- Input Area -->
+        <form id="chat-form" class="p-4 bg-gray-950 flex space-x-2">
+          <input 
+            type="text" 
+            id="chat-input" 
+            placeholder="Digite sua mensagem..." 
+            autocomplete="off"
+            class="flex-1 bg-gray-900 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500/50 transition-all"
+          >
+          <button 
+            type="submit" 
+            class="bg-green-500 hover:bg-green-600 text-black p-2 rounded-lg transition-all active:scale-95 shadow-lg shadow-green-500/20"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- FAB -->
+      <button 
+        id="chat-toggle-btn" 
+        class="w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center text-black shadow-2xl transition-all active:scale-90"
+      >
+        <img id="icon-open" src="/IMG/Gemini_Generated_Image_97yv1697yv1697yv-removebg-preview.png" alt="Agente DevIA" class="w-14 h-14" />
+        <svg id="icon-close" class="hidden" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <script>
+      (function() {
+        // =============================================
+        // DEVIA - ASSISTENTE VIRTUAL DO ALBERTO GABRIEL
+        // =============================================
+
+        // API Key do Gemini (injetada via deviaConfig.ts)
+        const GEMINI_API_KEY = window.DEVIA_CONFIG?.GEMINI_API_KEY || '';
+
+        // System Prompt - Base de Conhecimento da DevIA
+        const SYSTEM_PROMPT = `# ROLE E IDENTIDADE
+Você é a DevIA, a Assistente Virtual Oficial do portfólio de Alberto Gabriel. 
+Apresente-se SEMPRE como DevIA. Nunca diga que você é o Alberto. Deixe claro que você é a inteligência artificial desenvolvida por ele para otimizar o atendimento inicial.
+Seu tom de voz deve ser profissional, direto, prestativo e persuasivo, transmitindo alta autoridade técnica.
+
+# SEU OBJETIVO (SDR TÉCNICO)
+1. Recepcionar os visitantes do portfólio de forma ágil e amigável.
+2. Tirar dúvidas sobre a stack tecnológica, projetos e a experiência do Alberto usando a Base de Conhecimento abaixo.
+3. Entender o problema de negócio do visitante (ex: tarefas manuais repetitivas, sistemas legados, necessidade de automação ou dashboards).
+4. Direcionar o visitante qualificado para o WhatsApp do Alberto para fechar negócio.
+5. NUNCA dê orçamentos, preços ou prazos. Direcione essas negociações para o contato direto.
+
+# BASE DE CONHECIMENTO DO ALBERTO GABRIEL
+Use APENAS as informações abaixo para falar sobre o Alberto. Não invente tecnologias ou formações.
+
+[PERFIL PROFISSIONAL]
+- Nome: Alberto Gabriel (Detstrucker Dev)
+- Localização: Frutal, Minas Gerais.
+- Formação: Bacharelando em Sistemas de Informação pela UEMG (campus Frutal).
+- Especialização: Desenvolvedor Full-Stack focado em automação inteligente de processos, infraestrutura e criação de plataformas sob medida.
+
+[STACK TECNOLÓGICA E FERRAMENTAS]
+- Linguagens e Frameworks: Python, JavaScript, React, Node.js.
+- Bancos de Dados: PostgreSQL e modelagem avançada.
+- Automação: n8n avançado, integrações de APIs REST, Webhooks e CRMs (PipeRun, ClickUp).
+- IA e Chatbots: Desenvolvimento de agentes autônomos utilizando LLMs e Zep API para memória.
+- Infra e DevOps: Docker Swarm, Traefik, monitoramento com Elasticsearch (ELK Stack).
+
+[PROJETOS EM DESTAQUE (CASES)]
+- Gestão de Estágios (UEMG): Modelagem de banco de dados e plataforma para controle acadêmico e de convênios.
+- Pérola Agropecuária: Plataforma de gestão personalizada para otimização de estoque e fluxo de produção no agronegócio.
+- Dashboards Clínicos (Clínica Inovassie): Sistema de BI com visão geral de status e gestão integrada de pacientes em tempo real.
+- Automação para Personal Trainer: Agente de IA para rotinas administrativas, gestão de turmas e agenda via WhatsApp.
+
+[CONTATOS DO ALBERTO PARA REDIRECIONAMENTO]
+- WhatsApp: +55 34 99216-9148
+- GitHub: https://github.com/AlbertoGRB
+- Instagram: https://www.instagram.com/alberto_gabriel_r/
+- E-mail: dead.gusta.007@gmail.com
+
+# REGRAS DE RESPOSTA E FAQ
+- Responda de forma concisa (parágrafos curtos, ideal para chat).
+- Se perguntarem sobre uma tecnologia que não está na lista: Diga que o foco dele são as tecnologias citadas, mas que ele tem facilidade em adotar novas ferramentas por ter uma forte base em engenharia de software pela UEMG.
+- Se perguntarem de preço: "Cada projeto é desenhado sob medida. Para o Alberto entender o tamanho do seu desafio e arquitetar a solução, o ideal é conversar com ele. Chame no WhatsApp: +55 34 99216-9148."
+- Mantenha respostas curtas e diretas, ideais para o formato de chat.
+- Use emojis com moderação para tornar a conversa mais amigável.
+- Sempre termine incentivando a ação (chamar no WhatsApp ou explorar mais o portfólio).`;
+
+        // Estado da conversa
+        let isOpen = false;
+        let hasGreeted = false;
+        let conversationHistory = [];
+
+        // Elementos do DOM
+        const chatWindow = document.getElementById('chat-window');
+        const toggleBtn = document.getElementById('chat-toggle-btn');
+        const closeBtn = document.getElementById('close-chat');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const iconOpen = document.getElementById('icon-open');
+        const iconClose = document.getElementById('icon-close');
+
+        // Toggle do chat
+        function toggleChat() {
+          isOpen = !isOpen;
+          chatWindow.classList.toggle('hidden');
+          iconOpen.classList.toggle('hidden');
+          iconClose.classList.toggle('hidden');
+
+          if (isOpen) {
+            chatInput.focus();
+            if (!hasGreeted) {
+              hasGreeted = true;
+              const greetingMsg = "Olá! 👋 Eu sou a DevIA, a assistente virtual inteligente do Alberto Gabriel. Posso te ajudar com dúvidas sobre projetos, stack tecnológica e como o Alberto pode ajudar seu negócio. Como posso te ajudar hoje?";
+              renderBotMessage(greetingMsg);
+              conversationHistory.push({ role: "model", parts: [{ text: greetingMsg }] });
+            }
+          }
+        }
+
+        toggleBtn.addEventListener('click', toggleChat);
+        closeBtn.addEventListener('click', toggleChat);
+
+        // Renderizar mensagem do usuário
+        function renderUserMessage(text) {
+          const div = document.createElement('div');
+          div.className = 'flex justify-end';
+          div.innerHTML = `
+            <div class="bg-green-600 text-white px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-lg">
+              ${escapeHtml(text)}
+            </div>
+          `;
+          chatMessages.appendChild(div);
+          scrollToBottom();
+        }
+
+        // Renderizar mensagem do bot
+        function renderBotMessage(text) {
+          const div = document.createElement('div');
+          div.className = 'flex justify-start';
+          div.innerHTML = `
+            <div class="bg-gray-700/80 text-gray-100 px-4 py-2.5 rounded-2xl rounded-tl-sm max-w-[85%] text-sm shadow-lg leading-relaxed">
+              ${formatMessage(text)}
+            </div>
+          `;
+          chatMessages.appendChild(div);
+          scrollToBottom();
+        }
+
+        // Indicador de digitação
+        function renderTyping() {
+          const div = document.createElement('div');
+          div.id = 'typing-indicator';
+          div.className = 'flex justify-start';
+          div.innerHTML = `
+            <div class="bg-gray-700/80 text-gray-400 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center space-x-1">
+              <span class="w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+              <span class="w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+              <span class="w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+            </div>
+          `;
+          chatMessages.appendChild(div);
+          scrollToBottom();
+        }
+
+        function removeTyping() {
+          const typingIndicator = document.getElementById('typing-indicator');
+          if (typingIndicator) typingIndicator.remove();
+        }
+
+        function scrollToBottom() {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Escape HTML para segurança
+        function escapeHtml(text) {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+
+        // Formatar mensagem (links, quebras de linha)
+        function formatMessage(text) {
+          let formatted = escapeHtml(text);
+          // Converter quebras de linha
+          formatted = formatted.replace(/\n/g, '<br>');
+          // Converter links de WhatsApp
+          formatted = formatted.replace(
+            /\+55 34 99216-9148/g, 
+            '<a href="https://wa.me/5534992169148?text=Olá Alberto, vim pelo portfólio!" target="_blank" class="text-green-400 hover:text-green-300 underline font-semibold">+55 34 99216-9148</a>'
+          );
+          // Converter URLs do GitHub
+          formatted = formatted.replace(
+            /https:\/\/github\.com\/AlbertoGRB/g,
+            '<a href="https://github.com/AlbertoGRB" target="_blank" class="text-green-400 hover:text-green-300 underline">GitHub</a>'
+          );
+          return formatted;
+        }
+
+        // Chamar API do Gemini
+        async function callGeminiAPI(userMessage) {
+          if (!GEMINI_API_KEY) {
+            throw new Error('API Key não configurada');
+          }
+
+          // Adicionar mensagem do usuário ao histórico
+          conversationHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+          // Montar o payload com system instruction e histórico
+          const payload = {
+            system_instruction: {
+              parts: [{ text: SYSTEM_PROMPT }]
+            },
+            contents: conversationHistory,
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 500,
+            },
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+            ]
+          };
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            const botResponse = data.candidates[0].content.parts[0].text;
+            // Adicionar resposta ao histórico
+            conversationHistory.push({ role: "model", parts: [{ text: botResponse }] });
+            return botResponse;
+          } else {
+            throw new Error('Resposta inválida da API');
+          }
+        }
+
+        // Fallback local quando API não está disponível
+        function getLocalResponse(message) {
+          const msg = message.toLowerCase();
+
+          // Perguntas sobre quem é o Alberto
+          if (msg.includes('quem é o alberto') || msg.includes('quem e o alberto') || msg.includes('quem é alberto') || msg.includes('quem e alberto')) {
+            return "Alberto Gabriel é um desenvolvedor Full-Stack de Frutal/MG, bacharelando em Sistemas de Informação pela UEMG. Ele é especialista em automação inteligente, infraestrutura e criação de plataformas sob medida para empresas.";
+          }
+
+          // Perguntas sobre idade ou dados pessoais
+          if (msg.includes('quantos anos') || msg.includes('idade') || msg.includes('data de nascimento')) {
+            return "Essa informação não está disponível, mas posso te contar sobre a formação e experiência do Alberto! Caso queira saber mais detalhes pessoais, recomendo falar diretamente com ele pelo WhatsApp.";
+          }
+
+          if (msg.includes('preço') || msg.includes('valor') || msg.includes('custo') || msg.includes('orçamento')) {
+            return "Cada projeto é desenhado sob medida. Para o Alberto entender o tamanho do seu desafio e arquitetar a solução, o ideal é conversar diretamente com ele. 📱 Chame no WhatsApp: +55 34 99216-9148";
+          }
+
+          if (msg.includes('tecnologia') || msg.includes('stack') || msg.includes('linguagem')) {
+            return "O Alberto trabalha com uma stack moderna e robusta: Python, JavaScript, React, Node.js, PostgreSQL, n8n para automações, Docker Swarm para infraestrutura e LLMs para agentes de IA. Quer saber mais sobre alguma tecnologia específica?";
+          }
+
+          if (msg.includes('projeto') || msg.includes('case') || msg.includes('portfolio')) {
+            return "O Alberto já desenvolveu projetos incríveis como: 🏫 Gestão de Estágios (UEMG), 🌾 Plataforma para Pérola Agropecuária, 🏥 Dashboards Clínicos e 🤖 IA para Personal Trainers. Qual tipo de projeto te interessa?";
+          }
+
+          if (msg.includes('contato') || msg.includes('whatsapp') || msg.includes('falar')) {
+            return "Você pode falar diretamente com o Alberto pelo WhatsApp: +55 34 99216-9148 📱 Ele responde rápido!";
+          }
+
+          if (msg.includes('automação') || msg.includes('automatizar')) {
+            return "Automação é uma das especialidades do Alberto! 🚀 Ele trabalha com n8n avançado, integrações de APIs, Webhooks e CRMs. Que processo você gostaria de automatizar?";
+          }
+
+          if (msg.includes('olá') || msg.includes('oi') || msg.includes('hey') || msg.includes('bom dia') || msg.includes('boa tarde') || msg.includes('boa noite')) {
+            return "Olá! 👋 Prazer em te conhecer! Sou a DevIA, assistente do Alberto Gabriel. Como posso ajudar você hoje?";
+          }
+
+          return "Interessante! 🤔 Para te dar uma resposta mais completa sobre isso, recomendo conversar diretamente com o Alberto. Ele pode explicar melhor como ajudar no seu caso. 📱 WhatsApp: +55 34 99216-9148";
+        }
+
+        // Handler do formulário
+        chatForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const message = chatInput.value.trim();
+          if (!message) return;
+
+          chatInput.value = '';
+          chatInput.disabled = true;
+          renderUserMessage(message);
+          renderTyping();
+
+          try {
+            let botResponse;
+            
+            if (GEMINI_API_KEY) {
+              // Usar API do Gemini
+              botResponse = await callGeminiAPI(message);
+            } else {
+              // Fallback local
+              await new Promise(resolve => setTimeout(resolve, 800)); // Simular delay
+              botResponse = getLocalResponse(message);
+            }
+            
+            removeTyping();
+            renderBotMessage(botResponse);
+          } catch (error) {
+            console.error('DevIA Error:', error);
+            removeTyping();
+            
+            // Usar fallback em caso de erro
+            const fallbackResponse = getLocalResponse(message);
+            renderBotMessage(fallbackResponse);
+          } finally {
+            chatInput.disabled = false;
+            chatInput.focus();
+          }
+        });
+
+        // Log de inicialização
+        console.log('🤖 DevIA initialized', GEMINI_API_KEY ? '(Gemini API connected)' : '(Local fallback mode)');
+
+      })();
+    </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
